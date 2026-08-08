@@ -18,9 +18,20 @@ function main() {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split(/\r?\n/);
 
+  const REQUIRED_FIELDS = [
+    'round_id',
+    'prompt_content',
+    'modify_diff',
+    'commit_hash',
+    'modify_time',
+    'agent_type',
+    'dev_language'
+  ];
+
   let totalLines = 0;
   let validCount = 0;
-  let errorCount = 0;
+  let jsonErrorCount = 0;
+  let fieldErrorCount = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -28,14 +39,32 @@ function main() {
 
     totalLines++;
 
+    let obj;
     try {
-      JSON.parse(line);
-      validCount++;
+      obj = JSON.parse(line);
     } catch (e) {
-      errorCount++;
+      jsonErrorCount++;
       console.log(`第 ${i + 1} 行: ${e.message}`);
+      continue;
     }
+
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+      fieldErrorCount++;
+      console.log(`第 ${i + 1} 行: JSON顶层必须是对象`);
+      continue;
+    }
+
+    const missing = REQUIRED_FIELDS.filter(f => !(f in obj));
+    if (missing.length > 0) {
+      fieldErrorCount++;
+      console.log(`第 ${i + 1} 行: 缺少字段 ${missing.join(', ')}`);
+      continue;
+    }
+
+    validCount++;
   }
+
+  const errorCount = jsonErrorCount + fieldErrorCount;
 
   console.log(`\n总计: ${totalLines} 行`);
   console.log(`合法JSON: ${validCount} 行`);
