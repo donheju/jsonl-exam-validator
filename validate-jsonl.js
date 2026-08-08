@@ -78,11 +78,9 @@ function main() {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split(/\r?\n/);
 
+  const errors = [];
   let totalLines = 0;
   let validCount = 0;
-  let jsonErrorCount = 0;
-  let fieldErrorCount = 0;
-  let formatErrorCount = 0;
   let lastRoundId = 0;
 
   for (let i = 0; i < lines.length; i++) {
@@ -95,73 +93,77 @@ function main() {
     try {
       obj = JSON.parse(line);
     } catch (e) {
-      jsonErrorCount++;
-      console.log(`第 ${i + 1} 行: ${e.message}`);
+      errors.push({ line: i + 1, reason: e.message });
       continue;
     }
 
     if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
-      fieldErrorCount++;
-      console.log(`第 ${i + 1} 行: JSON顶层必须是对象`);
+      errors.push({ line: i + 1, reason: 'JSON顶层必须是对象' });
       continue;
     }
 
     const missing = REQUIRED_FIELDS.filter(f => !(f in obj));
     if (missing.length > 0) {
-      fieldErrorCount++;
-      console.log(`第 ${i + 1} 行: 缺少字段 ${missing.join(', ')}`);
+      errors.push({ line: i + 1, reason: `缺少字段 ${missing.join(', ')}` });
       continue;
     }
 
-    let errors = [];
+    const lineErrors = [];
 
     const roundIdErr = validateRoundId(obj.round_id);
     if (roundIdErr) {
-      errors.push(roundIdErr);
+      lineErrors.push(roundIdErr);
     } else {
       const currentRoundId = Number(obj.round_id);
       if (currentRoundId !== lastRoundId + 1) {
         if (currentRoundId <= lastRoundId) {
-          errors.push(`round_id ${currentRoundId} 重复或小于上一行 ${lastRoundId}`);
+          lineErrors.push(`round_id ${currentRoundId} 重复或小于上一行 ${lastRoundId}`);
         } else {
-          errors.push(`round_id 跳号: 上一行是 ${lastRoundId}，当前是 ${currentRoundId}`);
+          lineErrors.push(`round_id 跳号: 上一行是 ${lastRoundId}，当前是 ${currentRoundId}`);
         }
       }
       lastRoundId = currentRoundId;
     }
 
     const timeErr = validateModifyTime(obj.modify_time);
-    if (timeErr) errors.push(timeErr);
+    if (timeErr) lineErrors.push(timeErr);
 
     const agentErr = validateAgentType(obj.agent_type);
-    if (agentErr) errors.push(agentErr);
+    if (agentErr) lineErrors.push(agentErr);
 
     const langErr = validateDevLanguage(obj.dev_language);
-    if (langErr) errors.push(langErr);
+    if (langErr) lineErrors.push(langErr);
 
     const hashErr = validateString(obj.commit_hash, 'commit_hash');
-    if (hashErr) errors.push(hashErr);
+    if (hashErr) lineErrors.push(hashErr);
 
     const promptErr = validateString(obj.prompt_content, 'prompt_content');
-    if (promptErr) errors.push(promptErr);
+    if (promptErr) lineErrors.push(promptErr);
 
     const diffErr = validateString(obj.modify_diff, 'modify_diff');
-    if (diffErr) errors.push(diffErr);
+    if (diffErr) lineErrors.push(diffErr);
 
-    if (errors.length > 0) {
-      formatErrorCount++;
-      errors.forEach(err => console.log(`第 ${i + 1} 行: ${err}`));
-      continue;
+    if (lineErrors.length > 0) {
+      lineErrors.forEach(reason => errors.push({ line: i + 1, reason }));
+    } else {
+      validCount++;
     }
-
-    validCount++;
   }
 
-  const errorCount = jsonErrorCount + fieldErrorCount + formatErrorCount;
+  const errorCount = errors.length;
 
-  console.log(`\n总计: ${totalLines} 行`);
-  console.log(`合法JSON: ${validCount} 行`);
-  console.log(`错误JSON: ${errorCount} 行`);
+  if (errorCount === 0) {
+    console.log(`文件: ${filePath}`);
+    console.log(`总轮数: ${validCount}`);
+    console.log('校验通过');
+    process.exit(0);
+  } else {
+    console.log(`文件: ${filePath}`);
+    console.log(`总行数: ${totalLines}`);
+    console.log(`错误数量: ${errorCount}`);
+    errors.forEach(e => console.log(`第 ${e.line} 行: ${e.reason}`));
+    process.exit(1);
+  }
 }
 
 main();
