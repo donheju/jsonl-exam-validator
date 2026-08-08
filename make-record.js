@@ -4,8 +4,8 @@ const { execFileSync } = require('child_process');
 const file = 'AI开发考核_余铿_JSONL记录校验工具.jsonl';
 
 const record = {
-  round_id: 5,
-  prompt_content: '请为这个项目补充两个示例文件：1. sample.valid.jsonl，包含 2 行合法记录，字段完整，格式正确；2. sample.invalid.jsonl，包含几种常见错误：非法 JSON、缺少字段、round_id 不连续、modify_time 格式错误、agent_type 不在允许范围内。要求示例内容贴近 AI 开发考核场景，不修改核心逻辑，除非发现必要的小问题。',
+  round_id: 6,
+  prompt_content: '请为这个项目编写 README.md。README 需要包含：项目名称、选题说明、功能说明、运行环境、使用方法、示例命令、校验规则说明、开发过程说明、提示词产生方法、JSONL 文件生成方法、遇到的问题和解决方法。要求用中文，直白清楚，不要写得太夸张，符合招聘考核提交要求。',
   modify_diff: execFileSync('git', ['show', '--format=', '--unified=999', 'HEAD'], { encoding: 'utf8' }),
   commit_hash: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   modify_time: execFileSync('git', ['show', '-s', '--format=%cd', '--date=format:%Y-%m-%d %H:%M:%S', 'HEAD'], { encoding: 'utf8' }).trim(),
@@ -14,4 +14,4 @@ const record = {
 };
 
 fs.appendFileSync(file, JSON.stringify(record) + '\n', 'utf8');
-console.log('已追加第 5 轮记录:', file);
+console.log('已追加第 6 轮记录:', file);
