@@ -68,9 +68,9 @@ $ node validate-jsonl.js sample.invalid.jsonl
 - **第 2 轮**：字段校验。检查每行是否包含 7 个必填字段（round_id、prompt_content、modify_diff、commit_hash、modify_time、agent_type、dev_language），缺少则报告。
 - **第 3 轮**：字段格式校验。增加 round_id 连续性检查、modify_time 格式检查、agent_type 和 dev_language 枚举检查、字符串非空检查。
 - **第 4 轮**：优化命令行输出。将输出格式改为简洁风格，区分校验通过和失败两种状态，失败时进程退出码为 1，通过时为 0。
-- **第 5 轮**：修复 round_id 连续性检查 bug。修复了当某行因缺少字段或格式错误失败时，lastRoundId 未更新导致后续行误报跳号的问题。
-- **第 6 轮**：补充示例文件。添加 sample.valid.jsonl 和 sample.invalid.jsonl 两个示例文件，方便演示和测试。
-- **第 7 轮**：编写 README 文档。整理项目说明、校验规则、开发过程和注意事项。
+- **第 5 轮**：补充示例文件。添加 sample.valid.jsonl 和 sample.invalid.jsonl 两个示例文件，并在测试过程中发现并修复了 round_id 连续性检查的 bug。
+- **第 6 轮**：编写 README 文档。整理项目说明、校验规则、开发过程和注意事项。
+- **第 7 轮**：最终检查项目功能、示例文件、README 命令和 JSONL 记录的一致性。
 
 ## 提示词产生方法
 
@@ -80,9 +80,9 @@ $ node validate-jsonl.js sample.invalid.jsonl
 - 第 2 轮："在现有 validate-jsonl.js 基础上增加字段校验。每一行 JSON 必须包含..."
 - 第 3 轮："继续完善 validate-jsonl.js，增加字段格式校验。规则：..."
 - 第 4 轮："优化 validate-jsonl.js 的命令行输出。要求：校验通过时输出文件名、总轮数、校验通过..."
-- 第 5 轮："修复 validate-jsonl.js 中 round_id 连续性检查的 bug。当某行因缺少字段或格式错误失败时，lastRoundId 不会更新..."
-- 第 6 轮："请为这个项目补充两个示例文件：sample.valid.jsonl 和 sample.invalid.jsonl..."
-- 第 7 轮："请为这个项目编写 README.md，包含项目名称、选题说明、功能说明、运行环境、使用方法、示例命令、校验规则说明、开发过程说明、提示词产生方法、JSONL 文件生成方法、遇到的问题和解决方法..."
+- 第 5 轮："请为这个项目补充两个示例文件：sample.valid.jsonl 和 sample.invalid.jsonl..."
+- 第 6 轮："请为这个项目编写 README.md，包含项目名称、选题说明、功能说明、运行环境、使用方法、示例命令、校验规则说明、开发过程说明、提示词产生方法、JSONL 文件生成方法、遇到的问题和解决方法..."
+- 第 7 轮："请对整个项目做最终检查..."
 
 每轮只加一个维度的新功能或修复一个具体问题，避免需求过大导致实现偏离。
 
