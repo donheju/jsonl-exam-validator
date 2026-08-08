@@ -39,7 +39,7 @@ $ node validate-jsonl.js sample.invalid.jsonl
 文件: sample.invalid.jsonl
 总行数: 7
 错误数量: 5
-第 3 行: Unexpected token 'o', "not a valid json line at all" is not valid JSON
+第 3 行: Unexpected token 'o', "not a valid"... is not valid JSON
 第 4 行: round_id 跳号: 上一行是 2，当前是 4
 第 5 行: modify_time 格式错误，应为 YYYY-MM-DD HH:MM:SS
 第 6 行: agent_type 只能是 Kilo Code、PI、Cine 之一
