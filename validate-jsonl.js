@@ -1,5 +1,65 @@
 const fs = require('fs');
 
+const REQUIRED_FIELDS = [
+  'round_id',
+  'prompt_content',
+  'modify_diff',
+  'commit_hash',
+  'modify_time',
+  'agent_type',
+  'dev_language'
+];
+
+const ALLOWED_AGENT_TYPES = new Set(['Kilo Code', 'PI', 'Cine']);
+const ALLOWED_DEV_LANGUAGES = new Set(['C/C++', 'Java', 'JavaScript', 'TypeScript', 'Rust', 'Go', 'PHP', 'Ruby']);
+
+function validateRoundId(value) {
+  const num = Number(value);
+  if (!Number.isInteger(num) || num < 1) {
+    return 'round_id 必须是 >= 1 的整数';
+  }
+  return null;
+}
+
+function validateModifyTime(value) {
+  if (typeof value !== 'string') {
+    return 'modify_time 必须是字符串';
+  }
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)) {
+    return 'modify_time 格式错误，应为 YYYY-MM-DD HH:MM:SS';
+  }
+  const [datePart, timePart] = value.split(' ');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute, second] = timePart.split(':').map(Number);
+  if (month < 1 || month > 12) return 'modify_time 月份无效';
+  if (day < 1 || day > 31) return 'modify_time 日期无效';
+  if (hour < 0 || hour > 23) return 'modify_time 小时无效';
+  if (minute < 0 || minute > 59) return 'modify_time 分钟无效';
+  if (second < 0 || second > 59) return 'modify_time 秒无效';
+  return null;
+}
+
+function validateAgentType(value) {
+  if (!ALLOWED_AGENT_TYPES.has(value)) {
+    return `agent_type 只能是 ${[...ALLOWED_AGENT_TYPES].join('、')} 之一`;
+  }
+  return null;
+}
+
+function validateDevLanguage(value) {
+  if (!ALLOWED_DEV_LANGUAGES.has(value)) {
+    return `dev_language 只能是 ${[...ALLOWED_DEV_LANGUAGES].join('、')} 之一`;
+  }
+  return null;
+}
+
+function validateString(value, fieldName) {
+  if (typeof value !== 'string' || value.length === 0) {
+    return `${fieldName} 必须是非空字符串`;
+  }
+  return null;
+}
+
 function main() {
   const args = process.argv.slice(2);
 
@@ -18,28 +78,20 @@ function main() {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split(/\r?\n/);
 
-  const REQUIRED_FIELDS = [
-    'round_id',
-    'prompt_content',
-    'modify_diff',
-    'commit_hash',
-    'modify_time',
-    'agent_type',
-    'dev_language'
-  ];
-
   let totalLines = 0;
   let validCount = 0;
   let jsonErrorCount = 0;
   let fieldErrorCount = 0;
+  let formatErrorCount = 0;
+  let lastRoundId = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line === '') continue;
 
     totalLines++;
-
     let obj;
+
     try {
       obj = JSON.parse(line);
     } catch (e) {
@@ -61,10 +113,51 @@ function main() {
       continue;
     }
 
+    let errors = [];
+
+    const roundIdErr = validateRoundId(obj.round_id);
+    if (roundIdErr) {
+      errors.push(roundIdErr);
+    } else {
+      const currentRoundId = Number(obj.round_id);
+      if (currentRoundId !== lastRoundId + 1) {
+        if (currentRoundId <= lastRoundId) {
+          errors.push(`round_id ${currentRoundId} 重复或小于上一行 ${lastRoundId}`);
+        } else {
+          errors.push(`round_id 跳号: 上一行是 ${lastRoundId}，当前是 ${currentRoundId}`);
+        }
+      }
+      lastRoundId = currentRoundId;
+    }
+
+    const timeErr = validateModifyTime(obj.modify_time);
+    if (timeErr) errors.push(timeErr);
+
+    const agentErr = validateAgentType(obj.agent_type);
+    if (agentErr) errors.push(agentErr);
+
+    const langErr = validateDevLanguage(obj.dev_language);
+    if (langErr) errors.push(langErr);
+
+    const hashErr = validateString(obj.commit_hash, 'commit_hash');
+    if (hashErr) errors.push(hashErr);
+
+    const promptErr = validateString(obj.prompt_content, 'prompt_content');
+    if (promptErr) errors.push(promptErr);
+
+    const diffErr = validateString(obj.modify_diff, 'modify_diff');
+    if (diffErr) errors.push(diffErr);
+
+    if (errors.length > 0) {
+      formatErrorCount++;
+      errors.forEach(err => console.log(`第 ${i + 1} 行: ${err}`));
+      continue;
+    }
+
     validCount++;
   }
 
-  const errorCount = jsonErrorCount + fieldErrorCount;
+  const errorCount = jsonErrorCount + fieldErrorCount + formatErrorCount;
 
   console.log(`\n总计: ${totalLines} 行`);
   console.log(`合法JSON: ${validCount} 行`);
