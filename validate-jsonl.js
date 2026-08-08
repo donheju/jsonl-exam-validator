@@ -13,14 +13,6 @@ const REQUIRED_FIELDS = [
 const ALLOWED_AGENT_TYPES = new Set(['Kilo Code', 'PI', 'Cine']);
 const ALLOWED_DEV_LANGUAGES = new Set(['C/C++', 'Java', 'JavaScript', 'TypeScript', 'Rust', 'Go', 'PHP', 'Ruby']);
 
-function validateRoundId(value) {
-  const num = Number(value);
-  if (!Number.isInteger(num) || num < 1) {
-    return 'round_id 必须是 >= 1 的整数';
-  }
-  return null;
-}
-
 function validateModifyTime(value) {
   if (typeof value !== 'string') {
     return 'modify_time 必须是字符串';
@@ -102,19 +94,10 @@ function main() {
       continue;
     }
 
-    const missing = REQUIRED_FIELDS.filter(f => !(f in obj));
-    if (missing.length > 0) {
-      errors.push({ line: i + 1, reason: `缺少字段 ${missing.join(', ')}` });
-      continue;
-    }
-
     const lineErrors = [];
 
-    const roundIdErr = validateRoundId(obj.round_id);
-    if (roundIdErr) {
-      lineErrors.push(roundIdErr);
-    } else {
-      const currentRoundId = Number(obj.round_id);
+    const currentRoundId = Number(obj.round_id);
+    if (Number.isInteger(currentRoundId) && currentRoundId >= 1) {
       if (currentRoundId !== lastRoundId + 1) {
         if (currentRoundId <= lastRoundId) {
           lineErrors.push(`round_id ${currentRoundId} 重复或小于上一行 ${lastRoundId}`);
@@ -123,6 +106,12 @@ function main() {
         }
       }
       lastRoundId = currentRoundId;
+    }
+
+    const missing = REQUIRED_FIELDS.filter(f => !(f in obj));
+    if (missing.length > 0) {
+      errors.push({ line: i + 1, reason: `缺少字段 ${missing.join(', ')}` });
+      continue;
     }
 
     const timeErr = validateModifyTime(obj.modify_time);
